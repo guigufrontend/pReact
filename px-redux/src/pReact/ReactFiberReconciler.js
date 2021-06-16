@@ -40,3 +40,9 @@ export function updateClassComponent(wip) {
 export function updateFragmentComponent(wip) {
     reconcileChildren(wip, wip.props.children) 
 }
+
+// 判断同一个节点，服用
+// 调用前提是同一个层级下
+function sameNode(a,b) {
+    return !!(a&&b&&a.key===b.key&&a.type===b.type)
+}
