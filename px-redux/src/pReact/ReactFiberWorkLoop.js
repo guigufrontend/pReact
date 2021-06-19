@@ -1,6 +1,6 @@
 import { updateFuntionComponent, updateHostComponent, updateClassComponent, updateFragmentComponent } from "./ReactFiberReconciler";
 import { scheduleCallback, shouldYield } from "./schedule";
-import { isStr, isFun } from "./utils";
+import { isStr, isFun, isStringOrNumber, Placement, Update, updateNode } from "./utils";
 
 let wipRoot = null;
 // 将要更新的下一个fiber节点
@@ -9,6 +9,7 @@ let nextUnitOfWork = null
 export function scheduleUpdateOnfiber(fiber){
     wipRoot = fiber
     wipRoot.sibling = null
+    wipRoot.alternate = {...fiber}
     nextUnitOfWork = wipRoot
 
     // 调度更新
@@ -27,7 +28,7 @@ function performUnitOfWork(wip){
     const {type} = wip
     if(isFun(type)){
         type.prototype.isReactComponent?updateClassComponent(wip):updateFuntionComponent(wip)
-    }else if(isStr(type)){
+    }else if(isStringOrNumber(type)){
         updateHostComponent(wip)
     }else{
         updateFragmentComponent(wip)
@@ -84,13 +85,15 @@ function commitWorker(fiber){
     if(!fiber){
         return;
     }
-    const { stateNode } = fiber
+    const { stateNode, flags } = fiber
     // 第一次执行时parentnode就是container
     let parentNode = getParentNode(fiber)
-    if(stateNode){
+    if(flags&Placement&&stateNode){
         parentNode.appendChild(stateNode)
     }
-    
+    if(flags&Update&&stateNode){
+        updateNode(stateNode, fiber.alternate.props, fiber.props)
+    }
     commitWorker(fiber.child)
     commitWorker(fiber.sibling)
 }

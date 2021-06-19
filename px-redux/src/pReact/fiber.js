@@ -1,3 +1,5 @@
+import { NoFlags, Placement } from "./utils"
+
 export function createFiber(vnode, reutrnFiber){
     const fiber = {
         type: vnode.type,
@@ -7,7 +9,10 @@ export function createFiber(vnode, reutrnFiber){
         child:null,
         sibling:null,
         return: reutrnFiber,
-        // flags
+        // 标记节点更新方式
+        flags: Placement,
+        // 老节点
+        alternate: null,
     }
     return fiber
 }
