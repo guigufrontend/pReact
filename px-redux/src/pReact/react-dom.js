@@ -1,6 +1,7 @@
 import {scheduleUpdateOnfiber} from './ReactFiberWorkLoop'
 
 function render(vnode, container){
+// 此处vnode还没有fiber结构
     const fiberRoot = {
         type: container.nodeName.toLowerCase(),
         stateNode: container,

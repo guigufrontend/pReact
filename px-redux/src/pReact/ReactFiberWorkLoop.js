@@ -1,4 +1,5 @@
 import { updateFuntionComponent, updateHostComponent, updateClassComponent, updateFragmentComponent } from "./ReactFiberReconciler";
+import { scheduleCallback, shouldYield } from "./schedule";
 import { isStr, isFun } from "./utils";
 
 let wipRoot = null;
@@ -9,11 +10,20 @@ export function scheduleUpdateOnfiber(fiber){
     wipRoot = fiber
     wipRoot.sibling = null
     nextUnitOfWork = wipRoot
+
+    // 调度更新
+    scheduleCallback(workLoop)
 }
 
 // 执行更新
 function performUnitOfWork(wip){
     // 更新自己
+    // 注意这里wip fiber节点还没有child、stateNode、 sibling等属性
+    // 各种update方法会生成本wip的真实dom放在fiber上
+    // 还会找到子节点数组，构建fiber链表结构
+    // 类组件和函数式组件没有stateNode
+    // 他们的真实节点就是返回值或render函数的返回值， 作为他们自己的child
+    // 普通节点的真实dom放在stateNode上
     const {type} = wip
     if(isFun(type)){
         type.prototype.isReactComponent?updateClassComponent(wip):updateFuntionComponent(wip)
@@ -37,17 +47,29 @@ function performUnitOfWork(wip){
     return null
 }
 
-function workLoop(IdleDeadline){
-    while(nextUnitOfWork && IdleDeadline.timeRemaining()>0){
+// function workLoop(IdleDeadline){
+function workLoop(){
+    // while(nextUnitOfWork && IdleDeadline.timeRemaining()>0){
+    //     // 构建fiber节点
+    //     nextUnitOfWork = performUnitOfWork(nextUnitOfWork)
+    // }
+    while(nextUnitOfWork && !shouldYield()){
         nextUnitOfWork = performUnitOfWork(nextUnitOfWork)
     }
     if(!nextUnitOfWork&&wipRoot){
         commitRoot();
     }
 }
-requestIdleCallback(workLoop)
+
+// window提供的方法， 查看浏览器有没有空闲时间
+// 它将在浏览器的空闲时段内调用的函数排队
+// 它只在浏览器生效， 所以react提供了自己的实现
+// 实现在schedule中
+// requestIdleCallback(workLoop)
 
 function commitRoot(){
+    // 从跟wip的子节点开始提交
+    // 提交就是把生产的节点挂在到真实dom上
     commitWorker(wipRoot.child)
 }
 
@@ -63,6 +85,7 @@ function commitWorker(fiber){
         return;
     }
     const { stateNode } = fiber
+    // 第一次执行时parentnode就是container
     let parentNode = getParentNode(fiber)
     if(stateNode){
         parentNode.appendChild(stateNode)
