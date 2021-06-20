@@ -21,7 +21,7 @@ const postMessage = ()=>{
     // MessageChannel比timeout更早执行
     const {port1, port2} = new MessageChannel();
     port1.onmessage = ()=>{
-        console.log('timerQueue', timerQueue, timerQueue[0])
+        // console.log('timerQueue', timerQueue, timerQueue[0])
         let tem = timerQueue.splice(0, timerQueue.length)
         tem.forEach(item=>item())
     }
@@ -33,7 +33,7 @@ function flushWork(){
     while(currentTask&&!shouldYield()){
         const {callback} = currentTask
         callback()
-        console.log('taskQueue', taskQueue, taskQueue[0])
+        // console.log('taskQueue', taskQueue, taskQueue[0])
         taskQueue.shift();
         currentTask = taskQueue[0]
     }

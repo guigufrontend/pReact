@@ -4,7 +4,7 @@
 // import Component from './pReact0/Component'
 import ReactDOM from './pReact/react-dom'
 import Component from './pReact/Component'
-import { useReducer } from './pReact'
+import { useReducer, useEffect, useLayoutEffect } from './pReact'
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
@@ -15,13 +15,31 @@ function FunctionComponent(props){
   const {name} = props
   // const [count, setCount] = useState()
   const [count2, setCount2] = useReducer((x)=>x+1, 0)
+  const [count3, setCount3] = useReducer((x)=>x+2, 0)
+
+  useEffect(() => {
+    console.log('useEffect', count2)
+  }, [count2])
+
+  useLayoutEffect(() => {
+    console.log('useLayoutEffect', count2)
+  }, [count2])
   return <div>
     <p>{name}</p>
     {/* <p>{count}</p>
     <button onClick={()=>{setCount(count+1)}}>clickCount</button> */}
     <p>{count2}</p>
     <button onClick={()=>{setCount2()}}>clickCount2</button>
-
+    <p>{count3}</p>
+    <button onClick={()=>{setCount3()}}>clickCount3</button>
+    {count2 %2 ? <div>123</div>:<sapn>456</sapn>}
+    <ul>
+      <li key='0'>0</li>
+      <li key='1'>1</li>
+      {count2 % 2 ? <li key='2'>2</li>: null}
+      <li key='3'>3</li>
+      <li key='4'>4</li>
+    </ul>
   </div>
 }
 function FunctionComponent2(props){

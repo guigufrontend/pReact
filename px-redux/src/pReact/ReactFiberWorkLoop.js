@@ -1,6 +1,6 @@
 import { updateFuntionComponent, updateHostComponent, updateClassComponent, updateFragmentComponent } from "./ReactFiberReconciler";
 import { scheduleCallback, shouldYield } from "./schedule";
-import { isStr, isFun, isStringOrNumber, Placement, Update, updateNode } from "./utils";
+import { isStr, isFun, isStringOrNumber, Placement, Update, updateNode, Deletion } from "./utils";
 
 let wipRoot = null;
 // 将要更新的下一个fiber节点
@@ -69,9 +69,13 @@ function workLoop(){
 // requestIdleCallback(workLoop)
 
 function commitRoot(){
-    // 从跟wip的子节点开始提交
     // 提交就是把生产的节点挂在到真实dom上
-    commitWorker(wipRoot.child)
+    // 判断是否是函数组件， 函数组件需要把函数体也提交， 用来执行函数体内的hook
+    if(isFun(wipRoot.type)){
+        commitWorker(wipRoot)
+    }else{
+        commitWorker(wipRoot.child)
+    }
 }
 
 function getParentNode(fiber){
@@ -85,15 +89,77 @@ function commitWorker(fiber){
     if(!fiber){
         return;
     }
-    const { stateNode, flags } = fiber
+    const { stateNode, flags,  type, deletions } = fiber
+    if(isFun(type)){
+        invokeHooks(fiber)
+    }
     // 第一次执行时parentnode就是container
     let parentNode = getParentNode(fiber)
     if(flags&Placement&&stateNode){
-        parentNode.appendChild(stateNode)
+        // parentNode.appendChild(stateNode)
+        let hasSiblingNode = foundSiblingNode(fiber, parentNode)
+        // 往前插入
+        if(hasSiblingNode){
+            parentNode.insertBefore(stateNode, hasSiblingNode)
+        }else{
+            // 往后插入
+            parentNode.appendChild(fiber.stateNode)
+        }
     }
     if(flags&Update&&stateNode){
         updateNode(stateNode, fiber.alternate.props, fiber.props)
     }
+    if(deletions){
+        commitDeletions( deletions, stateNode||parentNode)
+    }
     commitWorker(fiber.child)
     commitWorker(fiber.sibling)
+}
+
+function invokeHooks(wip){
+    const { updateQueueOfLayout, updateQueueOfEffect } = wip
+    for(let i=0; i< updateQueueOfLayout.length; i++){
+        const effect = updateQueueOfLayout[i]
+            const {create} = effect
+            create()
+    }
+    for(let i=0; i< updateQueueOfEffect.length; i++){
+        const effect = updateQueueOfEffect[i]
+        scheduleCallback(()=>{
+            const {create} = effect
+            create()
+        })
+       
+    }
+}
+
+function commitDeletions(deletions, parentNode) {
+    for(let i=0; i< deletions.length; i++){
+        const del = deletions[i]
+        const child = getStateNode(del)
+        parentNode.removeChild(child)
+    }
+    
+}
+
+// 找子dom节点
+function getStateNode(fiber) {
+    let tem = fiber;
+    while(!tem.stateNode){
+        tem = tem.child
+    }
+    return tem.stateNode
+}
+
+function foundSiblingNode(fiber, parentNode){
+    let siblingHasNode = fiber.sibling
+    let node = null
+    while(siblingHasNode){
+        node = siblingHasNode.stateNode
+        if(node && parentNode.contains(node)){
+            return node
+        }
+        siblingHasNode = siblingHasNode.sibling
+    }
+    return null
 }

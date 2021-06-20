@@ -1,1 +1,1 @@
-export {useReducer} from './hooks'
+export {useReducer, useEffect, useLayoutEffect} from './hooks'

@@ -13,6 +13,8 @@ export function createFiber(vnode, reutrnFiber){
         flags: Placement,
         // 老节点
         alternate: null,
+        deletions: null, // 要删除的子节点
+        index: null, // 当前层级下的位置/下标
     }
     return fiber
 }
